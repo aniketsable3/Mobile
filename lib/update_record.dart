@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert'; // Ensure this import is present
+import 'dart:convert';
 
 class UpdateRecord extends StatefulWidget {
   final String name;
   final String email;
+
   UpdateRecord(this.name, this.email);
 
   @override
@@ -14,27 +15,37 @@ class UpdateRecord extends StatefulWidget {
 class _UpdateRecordState extends State<UpdateRecord> {
   TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
-  
 
   Future<void> updateRecord() async {
+    if (nameController.text.isEmpty || emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
     try {
       String uri = "http://10.0.2.2/mmcrud/update_record.php";
-      var res = await http.post(Uri.parse(uri),
-          body: {
-            "name": nameController.text,
-            "email": emailController.text,
-          
-          });
+      var res = await http.post(Uri.parse(uri), body: {
+        "name": nameController.text,
+        "email": emailController.text,
+      });
 
       var response = jsonDecode(res.body);
 
       if (response["success"] == "true") {
-        print("Updated");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Record Updated')),
+        );
       } else {
-        print("Some issue: ${response['message']}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Update failed: ${response['message']}')),
+        );
       }
     } catch (e) {
-      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -43,7 +54,6 @@ class _UpdateRecordState extends State<UpdateRecord> {
     super.initState();
     nameController.text = widget.name;
     emailController.text = widget.email;
-    
   }
 
   @override
@@ -52,35 +62,33 @@ class _UpdateRecordState extends State<UpdateRecord> {
       appBar: AppBar(
         title: Text('Update Record'),
       ),
-      body: Column(
-        children: [
-          Container(
-            margin: EdgeInsets.all(10),
-            child: TextFormField(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
               controller: nameController,
               decoration: InputDecoration(
-                  border: OutlineInputBorder(), labelText: 'Enter The Name'),
+                border: OutlineInputBorder(),
+                labelText: 'Enter The Name',
+              ),
             ),
-          ),
-          Container(
-            margin: EdgeInsets.all(10),
-            child: TextFormField(
+            SizedBox(height: 16),
+            TextFormField(
               controller: emailController,
               decoration: InputDecoration(
-                  border: OutlineInputBorder(), labelText: 'Enter The Email'),
+                border: OutlineInputBorder(),
+                labelText: 'Enter The Email',
+              ),
             ),
-          ),
-          
-          Container(
-            margin: EdgeInsets.all(10),
-            child: ElevatedButton(
-              onPressed: () {
-                updateRecord();
-              },
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: updateRecord,
               child: Text('Update'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

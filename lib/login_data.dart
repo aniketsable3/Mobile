@@ -2,98 +2,118 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:app/view_data.dart';
-import 'package:app/main.dart';
- // Ensure you have the correct import
+import 'package:app/main.dart'; // Ensure you have the correct import
 
 void main() {
   runApp(const LoginApp());
 }
 
-class LoginApp extends StatefulWidget {
-  const LoginApp({super.key});
+class LoginApp extends StatelessWidget {
+  const LoginApp({Key? key}) : super(key: key);
 
   @override
-  State<LoginApp> createState() => _LoginAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: LoginScreen(),
+    );
+  }
 }
 
-class _LoginAppState extends State<LoginApp> {
-  TextEditingController name = TextEditingController();
-  TextEditingController email = TextEditingController();
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   Future<void> login() async {
-    if (name.text.isNotEmpty && email.text.isNotEmpty) {
+    if (_formKey.currentState!.validate()) {
       try {
         String uri = "http://10.0.2.2/mmcrud/login_record.php";
         var res = await http.post(Uri.parse(uri), body: {
-          "name": name.text,
-          "email": email.text
+          "name": nameController.text,
+          "email": emailController.text,
         });
         var response = jsonDecode(res.body);
         if (response['status'] == 'success') {
-          print("Login Successful");
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const ViewData()),
+            MaterialPageRoute(builder: (context) => ViewData()),
           );
         } else {
-          print("Login Failed: ${response['message']}");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Login Failed: ${response['message']}')),
+          );
         }
       } catch (e) {
-        print(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
-    } else {
-      print("Please Fill All The Fields");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: Text('Login')),
-        body: SingleChildScrollView(
-          child: Column(children: [
-            Container(
-              margin: EdgeInsets.all(10),
-              child: TextFormField(
-                controller: name,
+    return Scaffold(
+      appBar: AppBar(title: Text('Login')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: nameController,
                 decoration: InputDecoration(
-                    border: OutlineInputBorder(), label: Text('Enter Your Name')),
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.all(10),
-              child: TextFormField(
-                controller: email,
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), label: Text('Enter Your Email')),
-              ),
-            ),
-            Container(
-              margin: EdgeInsets.all(10),
-              child: ElevatedButton(
-                onPressed: () {
-                  login();
+                  labelText: 'Enter Your Name',
+                  prefixIcon: Icon(Icons.person),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  return null;
                 },
+              ),
+              SizedBox(height: 16.0),
+              TextFormField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: 'Enter Your Email',
+                  prefixIcon: Icon(Icons.email),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: login,
                 child: Text('Login'),
               ),
-            ),
-            Container(
-              margin: EdgeInsets.all(0),
-              child: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const MyApp()),
-                        );
-                      },
-                      child: Text("Sign Up"));
+              SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MyApp()),
+                  );
                 },
+                child: Text('Sign Up'),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
